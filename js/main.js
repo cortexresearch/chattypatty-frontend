@@ -48,7 +48,7 @@ const adContent = [
     { gif: 'assets/4.gif', url: 'https://techieteam.club' }
 ];
 
-const AD_DURATION = 5900; // Duration to play each ad (5.9s)
+const AD_DURATION = 6000; // Duration to play each ad (6s exactly)
 
 const LAT_MIN = -90, LAT_MAX = 90;
 const LNG_MIN = -180, LNG_MAX = 180;
@@ -191,9 +191,13 @@ function rotateAds() {
     adIndex = (adIndex + 1) % adContent.length;
     const ad = adContent[adIndex];
     
-    // Add cache buster to force GIF restart
-    adImage.src = `${ad.gif}?t=${Date.now()}`;
-    adLink.href = ad.url;
+    // Preload to ensure image and link update simultaneously
+    const img = new Image();
+    img.onload = () => {
+        adImage.src = img.src;
+        adLink.href = ad.url;
+    };
+    img.src = `${ad.gif}?t=${Date.now()}`;
 }
 
 function updatePlayerStatus(player, lastActivity) {
