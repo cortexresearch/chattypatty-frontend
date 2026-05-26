@@ -44,8 +44,8 @@ const username = `${adjectives[Math.floor(Math.random() * adjectives.length)]}${
 const adContent = [
     { folder: 'assets/1', url: 'https://groupgpt.tech', slides: 4, slideDuration: 1500 },
     { folder: 'assets/2', url: 'https://usepinly.com', slides: 4, slideDuration: 1275 },
-    { folder: 'assets/3', url: 'https://pxpony.com', slides: 4, slideDuration: 1500 },
-    { folder: 'assets/4', url: 'https://techieteam.club', slides: 3, slideDuration: 2000 }
+    { folder: 'assets/3', url: 'https://techieteam.club', slides: 4, slideDuration: 1500 },
+    { folder: 'assets/4', url: 'https://pxpony.com', slides: 3, slideDuration: 2000 }
 ];
 
 let adRotationTimer = null;
