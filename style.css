@@ -41,7 +41,6 @@ input:focus {
     transform: translateX(-50%);
     width: 468px;
     height: 60px;
-    background: white;
     display: flex;
     justify-content: center;
     align-items: center;
