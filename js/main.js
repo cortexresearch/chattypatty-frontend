@@ -5,6 +5,7 @@ const BACKEND_URL = window.location.hostname === '127.0.0.1' || window.location.
 
 const socket = io(BACKEND_URL);
 const urlParams = new URLSearchParams(window.location.search);
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 const WORLD_SIZE = 1000000;
 const spawnX = parseFloat(urlParams.get('x')) || Math.floor(Math.random() * WORLD_SIZE);
@@ -552,7 +553,7 @@ function create() {
 
     // Movement
     this.input.on('pointerdown', (pointer) => {
-        if (worldViewMode) return; // Lock movement in World Mode
+        if (worldViewMode || document.activeElement.tagName === 'INPUT') return; // Lock movement in World Mode or when typing
 
         const centerX = this.scale.width / 2;
         const centerY = this.scale.height / 2;
@@ -703,14 +704,16 @@ function create() {
     uiText = this.add.text(10, 70, '', { font: '16px Arial', fill: '#ffffff' }).setDepth(2);
     uiText.setStroke('#000000', 4); // Added black stroke to coords
 
-    // Initialize keyboard controls
-    cursors = this.input.keyboard.createCursorKeys();
-    wasd = this.input.keyboard.addKeys({
-        up: Phaser.Input.Keyboard.KeyCodes.W,
-        down: Phaser.Input.Keyboard.KeyCodes.S,
-        left: Phaser.Input.Keyboard.KeyCodes.A,
-        right: Phaser.Input.Keyboard.KeyCodes.D
-    });
+    // Initialize keyboard controls if not on mobile
+    if (!isMobile) {
+        cursors = this.input.keyboard.createCursorKeys();
+        wasd = this.input.keyboard.addKeys({
+            up: Phaser.Input.Keyboard.KeyCodes.W,
+            down: Phaser.Input.Keyboard.KeyCodes.S,
+            left: Phaser.Input.Keyboard.KeyCodes.A,
+            right: Phaser.Input.Keyboard.KeyCodes.D
+        });
+    }
 }
 
 function update(time, delta) {
@@ -725,7 +728,13 @@ function update(time, delta) {
 
     // Keyboard Input
     const isTyping = document.activeElement.tagName === 'INPUT';
-    if (!isTyping && !worldViewMode) {
+    
+    // Toggle Phaser keyboard capture to prevent choppy typing
+    if (this.input.keyboard) {
+        this.input.keyboard.enabled = !isTyping;
+    }
+
+    if (!isTyping && !worldViewMode && !isMobile && cursors && wasd) {
         if (cursors.left.isDown || wasd.left.isDown) moveX = -adjustedSpeed;
         else if (cursors.right.isDown || wasd.right.isDown) moveX = adjustedSpeed;
 
@@ -739,8 +748,8 @@ function update(time, delta) {
         }
     }
 
-    // Click-to-move logic (Only if keyboard isn't moving us)
-    if (moveX === 0 && moveY === 0 && isMoving && targetX !== null && targetY !== null) {
+    // Click-to-move logic (Only if keyboard isn't moving us and not typing)
+    if (!isTyping && moveX === 0 && moveY === 0 && isMoving && targetX !== null && targetY !== null) {
         const dx = targetX - currentPosition.x;
         const dy = targetY - currentPosition.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
