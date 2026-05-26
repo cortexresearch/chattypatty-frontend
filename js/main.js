@@ -48,7 +48,7 @@ const adContent = [
     { gif: 'assets/4.gif', url: 'https://techieteam.club' }
 ];
 
-const AD_DURATION = 6000; // Duration to play each ad (1 loop @ 6s each)
+const AD_DURATION = 5900; // Duration to play each ad (5.9s)
 
 const LAT_MIN = -90, LAT_MAX = 90;
 const LNG_MIN = -180, LNG_MAX = 180;
