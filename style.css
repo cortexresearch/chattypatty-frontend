@@ -16,7 +16,7 @@ body, html {
 
 /* Chat input styling */
 input {
-    font-size: 16px;
+    font-size: 16px; /* Prevents auto-zoom on iOS */
     border: 3px solid #000000;
     border-radius: 25px;
     outline: none;
@@ -26,6 +26,11 @@ input {
 input:focus {
     border-color: #333333;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* UI Overlay ensure priority */
+#ui-overlay {
+    z-index: 10000 !important;
 }
 
 /* Ad banner styling */
@@ -173,6 +178,7 @@ input:focus {
     justify-content: center;
     align-items: center;
     transition: transform 0.1s;
+    touch-action: manipulation;
 }
 
 .ui-button:hover {

@@ -42,12 +42,13 @@ const randomDigits = Math.floor(Math.random() * 900) + 100; // 100-999
 const username = `${adjectives[Math.floor(Math.random() * adjectives.length)]}${colorName}${nouns[Math.floor(Math.random() * nouns.length)]}${randomDigits}`;
 
 const adContent = [
-    { text: 'Advertise Here #1' },
-    { text: 'Advertise Here #2' },
-    { text: 'Advertise Here #3' },
-    { text: 'Advertise Here #4' },
-    { text: 'Advertise Here #5' }
+    { gif: 'assets/1.gif', url: 'https://groupgpt.tech' },
+    { gif: 'assets/Pinly.gif', url: 'https://usepinly.com' },
+    { gif: 'assets/3.gif', url: 'https://pxpony.com' },
+    { gif: 'assets/4.gif', url: 'https://techieteam.club' }
 ];
+
+const AD_DURATION = 10000; // Duration to play each ad (approx 2 loops @ 5s each)
 
 const LAT_MIN = -90, LAT_MAX = 90;
 const LNG_MIN = -180, LNG_MAX = 180;
@@ -95,7 +96,6 @@ let selfChatBubble = null;
 let selfChatTimeout = null;
 let lastActivity = Date.now();
 let adIndex = 0;
-let adBanner;
 let worldContainer;
 let tileGrid = [];
 let lastTileGridX = null;
@@ -183,24 +183,17 @@ function updateSelfChat(scene, message) {
     // Removed setTimeout to prevent 'snagging' conflict with the update() loop
 }
 
-function updateAdBanner() {
-    if (adBanner) adBanner.destroy();
-    const width = this.scale.width;
-    const bannerWidth = Math.min(width - 40, 468);
-    
-    // Position ad banner at the very top center
-    adBanner = this.add.container(width / 2, 35);
-    const bg = this.add.rectangle(0, 0, bannerWidth, 50, 0xffffff);
-    bg.setStrokeStyle(3, 0x000000); // Added black stroke to ad background
-    const ad = this.add.text(0, 0, adContent[adIndex].text, { 
-        font: bannerWidth < 350 ? '14px Arial' : '18px Arial', 
-        color: '#000000', 
-        align: 'center' 
-    });
-    ad.setOrigin(0.5);
-    adBanner.add([bg, ad]);
-    adBanner.setDepth(10); // Highest depth
+function rotateAds() {
+    const adImage = document.getElementById('ad-image');
+    const adLink = document.getElementById('ad-link');
+    if (!adImage || !adLink) return;
+
     adIndex = (adIndex + 1) % adContent.length;
+    const ad = adContent[adIndex];
+    
+    // Add cache buster to force GIF restart
+    adImage.src = `${ad.gif}?t=${Date.now()}`;
+    adLink.href = ad.url;
 }
 
 function updatePlayerStatus(player, lastActivity) {
@@ -355,8 +348,12 @@ function create() {
     const nameLabel = createNameLabel(this, username, this.scale.width / 2, this.scale.height / 2, playerColor);
     nameLabels.set('self', nameLabel);
 
-    updateAdBanner.call(this);
-    this.time.addEvent({ delay: 5000, callback: updateAdBanner, callbackScope: this, loop: true });
+    // Initialize first ad
+    const initialAd = adContent[adIndex];
+    document.getElementById('ad-image').src = initialAd.gif;
+    document.getElementById('ad-link').href = initialAd.url;
+    
+    this.time.addEvent({ delay: AD_DURATION, callback: rotateAds, callbackScope: this, loop: true });
 
     // UI elements
     const shareBtn = document.getElementById('share-btn');
@@ -494,15 +491,24 @@ function create() {
     chatInput.placeholder = 'Type to chat...';
     document.body.appendChild(chatInput);
 
-    chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && chatInput.value.trim()) {
-            lastActivity = Date.now();
-            const message = chatInput.value.trim();
-            socket.emit('chat-message', { message });
-            updateSelfChat(this, message);
-            chatInput.value = '';
-            chatInput.blur(); // Hide keyboard on mobile
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            if (chatInput.value.trim()) {
+                lastActivity = Date.now();
+                const message = chatInput.value.trim();
+                socket.emit('chat-message', { message });
+                updateSelfChat(this, message);
+                chatInput.value = '';
+                chatInput.blur(); // Hide keyboard on mobile
+            } else {
+                chatInput.blur();
+            }
         }
+    });
+
+    // Ensure input focus doesn't trigger double movement
+    chatInput.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
     });
 
     // Handle Resize
@@ -513,7 +519,6 @@ function create() {
             nameLabels.get('self').setPosition(width / 2, height / 2 + PLAYER_RADIUS + 15);
         }
         uiText.setPosition(10, 70);
-        updateAdBanner.call(this);
     });
 
     // Movement
