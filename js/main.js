@@ -1,7 +1,7 @@
 // Configure backend URL (local or production)
 const BACKEND_URL = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' 
     ? 'http://localhost:3000' 
-    : 'https://chattypatty-backend-production.up.railway.app';
+    : 'https://api.pxpony.com';
 
 const socket = io(BACKEND_URL);
 const urlParams = new URLSearchParams(window.location.search);
