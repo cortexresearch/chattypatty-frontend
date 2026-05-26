@@ -42,13 +42,15 @@ const randomDigits = Math.floor(Math.random() * 900) + 100; // 100-999
 const username = `${adjectives[Math.floor(Math.random() * adjectives.length)]}${colorName}${nouns[Math.floor(Math.random() * nouns.length)]}${randomDigits}`;
 
 const adContent = [
-    { gif: 'assets/1.gif', url: 'https://groupgpt.tech', duration: 6000 },
-    { gif: 'assets/2.gif', url: 'https://usepinly.com', duration: 5100 },
-    { gif: 'assets/3.gif', url: 'https://pxpony.com', duration: 6000 },
-    { gif: 'assets/4.gif', url: 'https://techieteam.club', duration: 6000 }
+    { folder: 'assets/1', url: 'https://groupgpt.tech', slides: 4, slideDuration: 1500 },
+    { folder: 'assets/2', url: 'https://usepinly.com', slides: 4, slideDuration: 1275 },
+    { folder: 'assets/3', url: 'https://pxpony.com', slides: 4, slideDuration: 1500 },
+    { folder: 'assets/4', url: 'https://techieteam.club', slides: 3, slideDuration: 2000 }
 ];
 
 let adRotationTimer = null;
+let adIndex = 0;
+let adSlideIndex = 0;
 
 const LAT_MIN = -90, LAT_MAX = 90;
 const LNG_MIN = -180, LNG_MAX = 180;
@@ -95,7 +97,6 @@ let nameLabels = new Map();
 let selfChatBubble = null;
 let selfChatTimeout = null;
 let lastActivity = Date.now();
-let adIndex = 0;
 let worldContainer;
 let tileGrid = [];
 let lastTileGridX = null;
@@ -190,26 +191,34 @@ function rotateAds() {
     const adLink = document.getElementById('ad-link');
     if (!adImage || !adLink) return;
 
-    adIndex = (adIndex + 1) % adContent.length;
-    const ad = adContent[adIndex];
+    adSlideIndex++;
+    const currentAd = adContent[adIndex];
+
+    if (adSlideIndex >= currentAd.slides) {
+        adSlideIndex = 0;
+        adIndex = (adIndex + 1) % adContent.length;
+    }
+
+    const nextAd = adContent[adIndex];
+    const slidePath = `${nextAd.folder}/${adSlideIndex + 1}.jpg`;
     
     // Preload to ensure image and link update simultaneously
     const img = new Image();
     img.onload = () => {
         adImage.src = img.src;
-        adLink.href = ad.url;
+        adLink.href = nextAd.url;
         
-        // Schedule next rotation based on current ad duration
+        // Schedule next rotation based on current ad slide duration
         const currentScene = game.scene.scenes[0];
         if (currentScene && currentScene.time) {
             adRotationTimer = currentScene.time.addEvent({ 
-                delay: ad.duration, 
+                delay: nextAd.slideDuration, 
                 callback: rotateAds, 
                 callbackScope: currentScene 
             });
         }
     };
-    img.src = `${ad.gif}?t=${Date.now()}`;
+    img.src = `${slidePath}?t=${Date.now()}`;
 }
 
 function updatePlayerStatus(player, lastActivity) {
@@ -364,13 +373,13 @@ function create() {
     const nameLabel = createNameLabel(this, username, this.scale.width / 2, this.scale.height / 2, playerColor);
     nameLabels.set('self', nameLabel);
 
-    // Initialize first ad
+    // Initialize first ad slide
     const initialAd = adContent[adIndex];
-    document.getElementById('ad-image').src = initialAd.gif;
+    document.getElementById('ad-image').src = `${initialAd.folder}/${adSlideIndex + 1}.jpg`;
     document.getElementById('ad-link').href = initialAd.url;
     
     adRotationTimer = this.time.addEvent({ 
-        delay: initialAd.duration, 
+        delay: initialAd.slideDuration, 
         callback: rotateAds, 
         callbackScope: this 
     });
