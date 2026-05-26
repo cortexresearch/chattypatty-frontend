@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="ChattyPatty - World's Largest Chat Room">
+    <meta property="og:description" content="Join the planet-sized chat room and connect with people around the world!">
+    <meta property="og:image" content="">
+    <meta property="og:url" content="">
+    <title>ChattyPatty - World's Largest Chat Room</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.87.0/dist/phaser.min.js"></script>
+    <!-- Social Media Share APIs -->
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+    <script async src="https://platform.twitter.com/widgets.js"></script>
+    <script src="https://platform.linkedin.com/in.js" type="text/javascript">lang: en_US</script>
+</head>
+<body>
+    <div id="game-container"></div>
+    <div id="map-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;"></div>
+    
+    <!-- HTML UI Overlay -->
+    <div id="ui-overlay" style="position: fixed; top: 70px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 100;">
+        <button id="share-btn" class="ui-button" style="background-color: #a2f2a2;">Share</button>
+        <button id="mic-btn" class="ui-button" style="background-color: #cccccc;">MIC OFF</button>
+        <button id="map-btn" class="ui-button" style="background-color: #a2c2f2;">🌐</button>
+    </div>
+
+    <!-- Ad placeholder images -->
+    <div style="display: none;">
+        <img src="assets/placeholder1.jpg" alt="Ad 1">
+        <img src="assets/placeholder2.jpg" alt="Ad 2">
+        <img src="assets/placeholder3.jpg" alt="Ad 3">
+        <img src="assets/placeholder4.jpg" alt="Ad 4">
+        <img src="assets/placeholder5.jpg" alt="Ad 5">
+    </div>
+    <script>
+        // Initialize Facebook SDK
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId: 'your-fb-app-id',
+                autoLogAppEvents: true,
+                xfbml: true,
+                version: 'v12.0'
+            });
+        };
+
+        // Initialize social share handlers
+        function shareToFacebook(url) {
+            FB.ui({
+                method: 'share',
+                href: url,
+            });
+        }
+
+        function shareToTwitter(url, text) {
+            window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        function shareToLinkedIn(url) {
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+        }
+    </script>
+    <script src="js/main.js"></script>
+</body>
+</html>
