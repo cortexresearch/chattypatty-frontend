@@ -42,13 +42,13 @@ const randomDigits = Math.floor(Math.random() * 900) + 100; // 100-999
 const username = `${adjectives[Math.floor(Math.random() * adjectives.length)]}${colorName}${nouns[Math.floor(Math.random() * nouns.length)]}${randomDigits}`;
 
 const adContent = [
-    { gif: 'assets/1.gif', url: 'https://groupgpt.tech' },
-    { gif: 'assets/2.gif', url: 'https://usepinly.com' },
-    { gif: 'assets/3.gif', url: 'https://pxpony.com' },
-    { gif: 'assets/4.gif', url: 'https://techieteam.club' }
+    { gif: 'assets/1.gif', url: 'https://groupgpt.tech', duration: 6000 },
+    { gif: 'assets/2.gif', url: 'https://usepinly.com', duration: 5100 },
+    { gif: 'assets/3.gif', url: 'https://pxpony.com', duration: 6000 },
+    { gif: 'assets/4.gif', url: 'https://techieteam.club', duration: 6000 }
 ];
 
-const AD_DURATION = 6000; // Duration to play each ad (6s exactly)
+let adRotationTimer = null;
 
 const LAT_MIN = -90, LAT_MAX = 90;
 const LNG_MIN = -180, LNG_MAX = 180;
@@ -184,6 +184,8 @@ function updateSelfChat(scene, message) {
 }
 
 function rotateAds() {
+    if (adRotationTimer) adRotationTimer.remove();
+    
     const adImage = document.getElementById('ad-image');
     const adLink = document.getElementById('ad-link');
     if (!adImage || !adLink) return;
@@ -196,6 +198,16 @@ function rotateAds() {
     img.onload = () => {
         adImage.src = img.src;
         adLink.href = ad.url;
+        
+        // Schedule next rotation based on current ad duration
+        const currentScene = game.scene.scenes[0];
+        if (currentScene && currentScene.time) {
+            adRotationTimer = currentScene.time.addEvent({ 
+                delay: ad.duration, 
+                callback: rotateAds, 
+                callbackScope: currentScene 
+            });
+        }
     };
     img.src = `${ad.gif}?t=${Date.now()}`;
 }
@@ -357,7 +369,11 @@ function create() {
     document.getElementById('ad-image').src = initialAd.gif;
     document.getElementById('ad-link').href = initialAd.url;
     
-    this.time.addEvent({ delay: AD_DURATION, callback: rotateAds, callbackScope: this, loop: true });
+    adRotationTimer = this.time.addEvent({ 
+        delay: initialAd.duration, 
+        callback: rotateAds, 
+        callbackScope: this 
+    });
 
     // UI elements
     const shareBtn = document.getElementById('share-btn');
