@@ -17,7 +17,7 @@ This frontend is a static site served via Netlify.
 6. Click **"Deploy chattypatty-frontend"**.
 
 ## 3. Post-Deployment Configuration
-1. After deployment, Netlify will provide a URL (e.g., `https://chattypatty.netlify.app`).
+1. After deployment, Netlify will provide a URL (e.g., `https://chat.pxpony.com`).
 2. Go to **Site Settings** -> **Domain Management** to set a custom domain if needed.
 
 ## 4. Troubleshooting
