@@ -43,12 +43,12 @@ const username = `${adjectives[Math.floor(Math.random() * adjectives.length)]}${
 
 const adContent = [
     { gif: 'assets/1.gif', url: 'https://groupgpt.tech' },
-    { gif: 'assets/Pinly.gif', url: 'https://usepinly.com' },
+    { gif: 'assets/2.gif', url: 'https://usepinly.com' },
     { gif: 'assets/3.gif', url: 'https://pxpony.com' },
     { gif: 'assets/4.gif', url: 'https://techieteam.club' }
 ];
 
-const AD_DURATION = 12000; // Duration to play each ad (2 loops @ 6s each)
+const AD_DURATION = 6000; // Duration to play each ad (1 loop @ 6s each)
 
 const LAT_MIN = -90, LAT_MAX = 90;
 const LNG_MIN = -180, LNG_MAX = 180;
