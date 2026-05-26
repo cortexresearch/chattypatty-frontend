@@ -374,7 +374,7 @@ function create() {
             <h3>Share Location</h3>
             <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}" target="_blank" class="twitter">Twitter / X</a>
             <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}" target="_blank" class="facebook">Facebook</a>
-            <a href="https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent('Join ChattyPatty')}" target="_blank" class="linkedin">LinkedIn</a>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent('Join PxPony Chat')}" target="_blank" class="linkedin">LinkedIn</a>
             <button class="copy-link">Copy Link</button>
         `;
 
