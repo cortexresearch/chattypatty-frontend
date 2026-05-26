@@ -521,7 +521,20 @@ function create() {
     chatInput.placeholder = 'Type to chat...';
     document.body.appendChild(chatInput);
 
+    chatInput.addEventListener('focus', () => {
+        if (this.input.keyboard) {
+            this.input.keyboard.enabled = false;
+        }
+    });
+
+    chatInput.addEventListener('blur', () => {
+        if (this.input.keyboard) {
+            this.input.keyboard.enabled = true;
+        }
+    });
+
     chatInput.addEventListener('keydown', (e) => {
+        e.stopPropagation(); // Stop keys from reaching Phaser
         if (e.key === 'Enter') {
             if (chatInput.value.trim()) {
                 lastActivity = Date.now();
@@ -705,7 +718,8 @@ function create() {
     uiText.setStroke('#000000', 4); // Added black stroke to coords
 
     // Initialize keyboard controls if not on mobile
-    if (!isMobile) {
+    const trulyMobile = this.sys.game.device.os.android || this.sys.game.device.os.iOS || this.sys.game.device.os.windowsPhone;
+    if (!trulyMobile) {
         cursors = this.input.keyboard.createCursorKeys();
         wasd = this.input.keyboard.addKeys({
             up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -717,7 +731,6 @@ function create() {
 }
 
 function update(time, delta) {
-// ... (omitting update content for brevity in replace call)
     const adjustedSpeed = MOVEMENT_SPEED * (delta / 16.666);
     const lerpDelta = 1 - Math.pow(1 - LERP_FACTOR, delta / 16.666);
 
@@ -728,13 +741,9 @@ function update(time, delta) {
 
     // Keyboard Input
     const isTyping = document.activeElement.tagName === 'INPUT';
-    
-    // Toggle Phaser keyboard capture to prevent choppy typing
-    if (this.input.keyboard) {
-        this.input.keyboard.enabled = !isTyping;
-    }
+    const trulyMobile = this.sys.game.device.os.android || this.sys.game.device.os.iOS || this.sys.game.device.os.windowsPhone;
 
-    if (!isTyping && !worldViewMode && !isMobile && cursors && wasd) {
+    if (!isTyping && !worldViewMode && !trulyMobile && cursors && wasd) {
         if (cursors.left.isDown || wasd.left.isDown) moveX = -adjustedSpeed;
         else if (cursors.right.isDown || wasd.right.isDown) moveX = adjustedSpeed;
 
