@@ -99,36 +99,46 @@ const config = {
 let game;
 
 async function fetchStats() {
+    const loadingBar = document.getElementById('loading-bar');
+    const statusText = document.getElementById('status-text');
+    const arrow = document.getElementById('connection-arrow');
+    
     try {
+        // Simple loading bar animation while fetching
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 5;
+            if (progress <= 90) loadingBar.style.width = `${progress}%`;
+        }, 50);
+
         const response = await fetch(`${BACKEND_URL}/api/stats`);
         const data = await response.json();
+        
+        clearInterval(interval);
+        loadingBar.style.width = '100%';
         
         document.getElementById('player-count').innerText = data.activePlayersCount || 0;
         document.getElementById('visitor-count').innerText = data.uniqueVisitorsCount || 0;
         
-        // Update UI state to connected
-        document.getElementById('connection-container').classList.add('connected');
-        const connectBtn = document.getElementById('connect-btn');
-        connectBtn.disabled = false;
-        connectBtn.innerText = 'Connect to Metaverse';
-        document.getElementById('status-text').innerHTML = '<span class="pulse"></span> Connected to Railway Backend';
+        statusText.innerText = 'Connection Established!';
+        arrow.innerText = '>>>';
+        arrow.style.color = '#22c55e';
+        
+        // Auto-start game after a brief pause to show stats
+        setTimeout(() => {
+            game = new Phaser.Game(config);
+        }, 500);
+
     } catch (error) {
         console.error('Error fetching stats:', error);
-        document.getElementById('status-text').innerHTML = '<span class="pulse" style="background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span> Offline - Retrying...';
+        statusText.innerText = 'Backend Offline - Retrying...';
+        arrow.innerText = '-X-';
+        arrow.style.color = '#ef4444';
         setTimeout(fetchStats, 5000);
     }
 }
 
-document.getElementById('connect-btn').addEventListener('click', () => {
-    const btn = document.getElementById('connect-btn');
-    btn.disabled = true;
-    btn.innerText = 'Establishing Connection...';
-    
-    // Start Phaser Game
-    game = new Phaser.Game(config);
-});
-
-// Initial fetch
+// Initial fetch to start the sequence
 fetchStats();
 
 let player, targetX, targetY, isMoving = false, uiText;
