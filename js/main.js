@@ -96,7 +96,40 @@ const config = {
     scene: { create, update },
 };
 
-const game = new Phaser.Game(config);
+let game;
+
+async function fetchStats() {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/stats`);
+        const data = await response.json();
+        
+        document.getElementById('player-count').innerText = data.activePlayersCount || 0;
+        document.getElementById('visitor-count').innerText = data.uniqueVisitorsCount || 0;
+        
+        // Update UI state to connected
+        document.getElementById('connection-container').classList.add('connected');
+        const connectBtn = document.getElementById('connect-btn');
+        connectBtn.disabled = false;
+        connectBtn.innerText = 'Connect to Metaverse';
+        document.getElementById('status-text').innerHTML = '<span class="pulse"></span> Connected to Railway Backend';
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+        document.getElementById('status-text').innerHTML = '<span class="pulse" style="background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span> Offline - Retrying...';
+        setTimeout(fetchStats, 5000);
+    }
+}
+
+document.getElementById('connect-btn').addEventListener('click', () => {
+    const btn = document.getElementById('connect-btn');
+    btn.disabled = true;
+    btn.innerText = 'Establishing Connection...';
+    
+    // Start Phaser Game
+    game = new Phaser.Game(config);
+});
+
+// Initial fetch
+fetchStats();
 
 let player, targetX, targetY, isMoving = false, uiText;
 let otherPlayers = new Map();
@@ -376,31 +409,18 @@ async function toggleVoice() {
 // --- Phaser lifecycle ---
 
 function create() {
-    // Progress bar simulation for a smoother feel
-    let progress = 0;
-    const loadingBar = document.getElementById('loading-bar');
-    const loadingText = document.getElementById('loading-text');
     const loadingScreen = document.getElementById('loading-screen');
     const uiOverlay = document.getElementById('ui-overlay');
     const adLink = document.getElementById('ad-link');
 
-    const progressInterval = setInterval(() => {
-        progress += Math.random() * 10;
-        if (progress >= 100) {
-            progress = 100;
-            clearInterval(progressInterval);
-            
-            // Fade out loading screen
-            loadingScreen.style.opacity = '0';
-            loadingScreen.style.transition = 'opacity 0.5s ease';
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-                uiOverlay.style.opacity = '1';
-                adLink.style.opacity = '1';
-            }, 500);
-        }
-        if (loadingBar) loadingBar.style.width = `${progress}%`;
-    }, 100);
+    // Transition from dashboard to game
+    loadingScreen.style.opacity = '0';
+    loadingScreen.style.transition = 'opacity 0.8s ease';
+    setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        uiOverlay.style.opacity = '1';
+        adLink.style.opacity = '1';
+    }, 800);
 
     worldContainer = this.add.container(0, 0);
     createTiles(this, this.scale.width / 2, this.scale.height / 2);
