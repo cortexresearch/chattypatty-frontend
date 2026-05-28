@@ -136,6 +136,7 @@ let imageBubbles = new Map();
 let nameLabels = new Map();
 let selfChatBubble = null;
 let selfImageBubble = null;
+let selfImageData = null;
 let selfChatTimeout = null;
 let lastActivity = Date.now();
 let worldContainer;
@@ -266,6 +267,7 @@ function updateSelfChat(scene, message) {
 
 function updateSelfImage(scene, imageData) {
     if (selfImageBubble) selfImageBubble.destroy();
+    selfImageData = imageData;
     selfImageBubble = createImageBubble(scene, imageData, config.width / 2, config.height / 2);
 }
 
@@ -784,7 +786,8 @@ function create() {
             if (imageBubbles.has(id)) imageBubbles.get(id).bubble.destroy();
             imageBubbles.set(id, {
                 bubble: createImageBubble(this, imageData, otherPlayer.x, otherPlayer.y, timestamp),
-                timestamp
+                timestamp,
+                imageData
             });
         }
     });
@@ -1047,6 +1050,7 @@ function update(time, delta) {
         if (age > CHAT_DURATION) {
             selfImageBubble.destroy();
             selfImageBubble = null;
+            selfImageData = null;
         } else {
             selfImageBubble.setAlpha(1 - age / CHAT_DURATION);
         }
@@ -1121,13 +1125,15 @@ function updateMapMarkers() {
         selfMarker.setLatLng([selfLatLng.lat, selfLatLng.lng]);
     }
 
-    // Handle Self Chat Bubble on Map
-    if (selfChatBubble) {
+    // Handle Self Content on Map (Image prioritized over Chat)
+    if (selfImageBubble && selfImageData) {
+        selfMarker.setPopupContent(`${username}<br/><img src="${selfImageData}" style="width:100px; border:2px solid black; border-radius:4px; margin-top:5px;">`);
+        if (!selfMarker.isPopupOpen()) selfMarker.openPopup();
+    } else if (selfChatBubble) {
         const age = Date.now() - selfChatBubble.startTime;
         if (age < CHAT_DURATION) {
             selfMarker.setPopupContent(`${username}<br/><b>${selfChatBubble.text}</b>`);
             if (!selfMarker.isPopupOpen()) selfMarker.openPopup();
-            // Fading simulation via opacity isn't direct for popups, but we can set content
         } else {
             selfMarker.setPopupContent(username);
         }
@@ -1151,11 +1157,18 @@ function updateMapMarkers() {
             const marker = playerMarkers.get(id);
             marker.setLatLng([latLng.lat, latLng.lng]);
             
-            // Handle Other Player Chat Bubbles on Map
-            if (chatBubbles.has(id)) {
+            // Handle Other Player Content (Image prioritized)
+            if (imageBubbles.has(id)) {
+                const { imageData, timestamp } = imageBubbles.get(id);
+                if (Date.now() - timestamp < CHAT_DURATION) {
+                    marker.setPopupContent(`<img src="${imageData}" style="width:100px; border:2px solid black; border-radius:4px;">`);
+                    if (!marker.isPopupOpen()) marker.openPopup();
+                } else {
+                    marker.closePopup();
+                }
+            } else if (chatBubbles.has(id)) {
                 const { bubble, timestamp } = chatBubbles.get(id);
-                const age = Date.now() - timestamp;
-                if (age < CHAT_DURATION) {
+                if (Date.now() - timestamp < CHAT_DURATION) {
                     marker.setPopupContent(`<b>${bubble.text}</b>`);
                     if (!marker.isPopupOpen()) marker.openPopup();
                 } else {
