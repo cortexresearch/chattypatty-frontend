@@ -220,31 +220,40 @@ function createChatBubble(scene, text, x, y, startTime = Date.now()) {
 }
 
 function createImageBubble(scene, imageData, x, y, startTime = Date.now()) {
-    const key = `img-${Math.random()}`;
+    const key = `img-${Math.random().toString(36).substr(2, 9)}`;
     
     const container = scene.add.container(x, y - IMAGE_BUBBLE_OFFSET);
     container.setDepth(4);
     container.startTime = startTime;
 
+    const bg = scene.add.graphics();
+    container.add(bg);
+
+    // Add base64 texture and wait for it to be ready
     scene.textures.addBase64(key, imageData);
     
-    const img = scene.add.image(0, 0, key);
-    
-    // Scale image to fit a max size
-    const maxSize = 150;
-    const scale = Math.min(maxSize / img.width, maxSize / img.height);
-    img.setScale(scale);
+    scene.textures.once(`addtexture-${key}`, () => {
+        if (!container.active) return; // Prevent errors if bubble expired already
 
-    const bg = scene.add.graphics();
-    const width = img.displayWidth + 10;
-    const height = img.displayHeight + 10;
-    
-    bg.fillStyle(0xffffff, 1);
-    bg.lineStyle(3, 0x000000);
-    bg.fillRoundedRect(-width / 2, -height / 2, width, height, 8);
-    bg.strokeRoundedRect(-width / 2, -height / 2, width, height, 8);
+        const img = scene.add.image(0, 0, key);
+        
+        // Scale image to fit a max size
+        const maxSize = 150;
+        const scale = Math.min(maxSize / img.width, maxSize / img.height);
+        img.setScale(scale);
 
-    container.add([bg, img]);
+        const width = img.displayWidth + 10;
+        const height = img.displayHeight + 10;
+        
+        bg.fillStyle(0xffffff, 1);
+        bg.lineStyle(3, 0x000000);
+        bg.fillRoundedRect(-width / 2, -height / 2, width, height, 8);
+        bg.strokeRoundedRect(-width / 2, -height / 2, width, height, 8);
+
+        container.add(img);
+        container.img = img; // Reference for cleanup
+    });
+
     return container;
 }
 
