@@ -100,41 +100,27 @@ let game;
 
 async function fetchStats() {
     const loadingBar = document.getElementById('loading-bar');
-    const statusText = document.getElementById('status-text');
-    const arrow = document.getElementById('connection-arrow');
     
     try {
-        // Simple loading bar animation while fetching
+        // Background loading progress
         let progress = 0;
         const interval = setInterval(() => {
             progress += 5;
             if (progress <= 90) loadingBar.style.width = `${progress}%`;
-        }, 50);
+        }, 30);
 
-        const response = await fetch(`${BACKEND_URL}/api/stats`);
-        const data = await response.json();
+        // Silent fetch for connection check
+        await fetch(`${BACKEND_URL}/api/stats`);
         
         clearInterval(interval);
         loadingBar.style.width = '100%';
         
-        document.getElementById('player-count').innerText = data.activePlayersCount || 0;
-        document.getElementById('visitor-count').innerText = data.uniqueVisitorsCount || 0;
-        
-        statusText.innerText = 'Connection Established!';
-        arrow.innerText = '>>>';
-        arrow.style.color = '#22c55e';
-        
-        // Auto-start game after a brief pause to show stats
-        setTimeout(() => {
-            game = new Phaser.Game(config);
-        }, 500);
+        // Auto-start game
+        game = new Phaser.Game(config);
 
     } catch (error) {
-        console.error('Error fetching stats:', error);
-        statusText.innerText = 'Backend Offline - Retrying...';
-        arrow.innerText = '-X-';
-        arrow.style.color = '#ef4444';
-        setTimeout(fetchStats, 5000);
+        console.error('Connection failed, retrying...', error);
+        setTimeout(fetchStats, 2000);
     }
 }
 
