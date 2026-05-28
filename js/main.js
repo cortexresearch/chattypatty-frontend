@@ -1120,30 +1120,36 @@ function updateMapMarkers() {
             weight: 2,
             opacity: 1,
             fillOpacity: 0.8
-        }).addTo(leafletMap).bindPopup(username, { autoClose: false, closeOnClick: false });
+        }).addTo(leafletMap)
+          .bindTooltip(username, { permanent: true, direction: 'top', offset: [0, -10] })
+          .bindPopup('', { autoClose: false, closeOnClick: false });
     } else {
         selfMarker.setLatLng([selfLatLng.lat, selfLatLng.lng]);
     }
 
-    // Handle Self Content on Map (Image prioritized over Chat)
+    // Handle Self Content on Map
+    let selfContent = null;
     if (selfImageBubble && selfImageData) {
-        selfMarker.setPopupContent(`${username}<br/><img src="${selfImageData}" style="width:100px; border:2px solid black; border-radius:4px; margin-top:5px;">`);
-        if (!selfMarker.isPopupOpen()) selfMarker.openPopup();
+        selfContent = `<img src="${selfImageData}" style="width:100px; border:2px solid black; border-radius:4px;">`;
     } else if (selfChatBubble) {
         const age = Date.now() - selfChatBubble.startTime;
         if (age < CHAT_DURATION) {
-            selfMarker.setPopupContent(`${username}<br/><b>${selfChatBubble.text}</b>`);
-            if (!selfMarker.isPopupOpen()) selfMarker.openPopup();
-        } else {
-            selfMarker.setPopupContent(username);
+            selfContent = `<b>${selfChatBubble.text}</b>`;
         }
+    }
+
+    if (selfContent) {
+        selfMarker.setPopupContent(selfContent);
+        if (!selfMarker.isPopupOpen()) selfMarker.openPopup();
     } else {
-        selfMarker.setPopupContent(username);
+        if (selfMarker.isPopupOpen()) selfMarker.closePopup();
     }
 
     otherPlayerWorldPos.forEach((pos, id) => {
         const latLng = gameToLatLng(pos.x, pos.y);
         if (!playerMarkers.has(id)) {
+            // Get username from nameLabels if available
+            const otherName = nameLabels.has(id) ? nameLabels.get(id).list[1].text : 'Player';
             const marker = L.circleMarker([latLng.lat, latLng.lng], {
                 radius: 8,
                 fillColor: '#888',
@@ -1151,31 +1157,33 @@ function updateMapMarkers() {
                 weight: 1,
                 opacity: 1,
                 fillOpacity: 0.6
-            }).addTo(leafletMap).bindPopup('Player', { autoClose: false, closeOnClick: false });
+            }).addTo(leafletMap)
+              .bindTooltip(otherName, { permanent: true, direction: 'top', offset: [0, -8] })
+              .bindPopup('', { autoClose: false, closeOnClick: false });
             playerMarkers.set(id, marker);
         } else {
             const marker = playerMarkers.get(id);
             marker.setLatLng([latLng.lat, latLng.lng]);
             
-            // Handle Other Player Content (Image prioritized)
+            // Handle Other Player Content
+            let otherContent = null;
             if (imageBubbles.has(id)) {
                 const { imageData, timestamp } = imageBubbles.get(id);
                 if (Date.now() - timestamp < CHAT_DURATION) {
-                    marker.setPopupContent(`<img src="${imageData}" style="width:100px; border:2px solid black; border-radius:4px;">`);
-                    if (!marker.isPopupOpen()) marker.openPopup();
-                } else {
-                    marker.closePopup();
+                    otherContent = `<img src="${imageData}" style="width:100px; border:2px solid black; border-radius:4px;">`;
                 }
             } else if (chatBubbles.has(id)) {
                 const { bubble, timestamp } = chatBubbles.get(id);
                 if (Date.now() - timestamp < CHAT_DURATION) {
-                    marker.setPopupContent(`<b>${bubble.text}</b>`);
-                    if (!marker.isPopupOpen()) marker.openPopup();
-                } else {
-                    marker.closePopup();
+                    otherContent = `<b>${bubble.text}</b>`;
                 }
+            }
+
+            if (otherContent) {
+                marker.setPopupContent(otherContent);
+                if (!marker.isPopupOpen()) marker.openPopup();
             } else {
-                marker.closePopup();
+                if (marker.isPopupOpen()) marker.closePopup();
             }
         }
     });
