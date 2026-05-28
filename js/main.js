@@ -4,6 +4,15 @@ const BACKEND_URL = window.location.hostname === '127.0.0.1' || window.location.
     : 'https://api.pxpony.com';
 
 const socket = io(BACKEND_URL);
+
+// Unique Visitor ID
+let visitorId = localStorage.getItem('visitorId');
+if (!visitorId) {
+    visitorId = 'v-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+    localStorage.setItem('visitorId', visitorId);
+}
+socket.emit('visitor-session', { visitorId });
+
 const urlParams = new URLSearchParams(window.location.search);
 const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
@@ -79,7 +88,7 @@ const config = {
     parent: "game-container",
     width: window.innerWidth,
     height: window.innerHeight,
-    backgroundColor: "#000",
+    backgroundColor: "#FF69B4",
     scale: {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH
@@ -209,6 +218,9 @@ function rotateAds() {
         adImage.src = img.src;
         adLink.href = nextAd.url;
         
+        // Track ad play
+        socket.emit('ad-played', { adUrl: nextAd.url });
+
         // Schedule next rotation based on current ad slide duration
         const currentScene = game.scene.scenes[0];
         if (currentScene && currentScene.time) {
@@ -364,6 +376,32 @@ async function toggleVoice() {
 // --- Phaser lifecycle ---
 
 function create() {
+    // Progress bar simulation for a smoother feel
+    let progress = 0;
+    const loadingBar = document.getElementById('loading-bar');
+    const loadingText = document.getElementById('loading-text');
+    const loadingScreen = document.getElementById('loading-screen');
+    const uiOverlay = document.getElementById('ui-overlay');
+    const adLink = document.getElementById('ad-link');
+
+    const progressInterval = setInterval(() => {
+        progress += Math.random() * 10;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(progressInterval);
+            
+            // Fade out loading screen
+            loadingScreen.style.opacity = '0';
+            loadingScreen.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                uiOverlay.style.opacity = '1';
+                adLink.style.opacity = '1';
+            }, 500);
+        }
+        if (loadingBar) loadingBar.style.width = `${progress}%`;
+    }, 100);
+
     worldContainer = this.add.container(0, 0);
     createTiles(this, this.scale.width / 2, this.scale.height / 2);
 
@@ -374,12 +412,19 @@ function create() {
     const nameLabel = createNameLabel(this, username, this.scale.width / 2, this.scale.height / 2, playerColor);
     nameLabels.set('self', nameLabel);
 
-    // Initialize first ad slide
+    // Initialize first ad slide with preloading to prevent flash
     const initialAd = adContent[adIndex];
-    document.getElementById('ad-image').src = `${initialAd.folder}/${adSlideIndex + 1}.jpg`;
-    document.getElementById('ad-link').href = initialAd.url;
-    
-    adRotationTimer = this.time.addEvent({ 
+    const initialAdPath = `${initialAd.folder}/${adSlideIndex + 1}.jpg`;
+    const tempImg = new Image();
+    tempImg.onload = () => {
+        document.getElementById('ad-image').src = initialAdPath;
+        document.getElementById('ad-link').href = initialAd.url;
+        socket.emit('ad-played', { adUrl: initialAd.url });
+    };
+    tempImg.src = initialAdPath;
+
+    adRotationTimer = this.time.addEvent({
+ 
         delay: initialAd.slideDuration, 
         callback: rotateAds, 
         callbackScope: this 
