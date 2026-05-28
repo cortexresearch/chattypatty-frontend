@@ -247,8 +247,10 @@ function rotateAds() {
         adImage.src = img.src;
         adLink.href = nextAd.url;
         
-        // Track ad play
-        socket.emit('ad-played', { adUrl: nextAd.url });
+        // Track ad play ONLY on the first slide of an ad
+        if (adSlideIndex === 0) {
+            socket.emit('ad-played', { adUrl: nextAd.url });
+        }
 
         // Schedule next rotation based on current ad slide duration
         const currentScene = game.scene.scenes[0];
