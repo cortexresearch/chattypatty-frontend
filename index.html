@@ -49,8 +49,10 @@
     <!-- HTML UI Overlay -->
     <div id="ui-overlay" style="position: fixed; top: 70px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 10000; align-items: flex-end; opacity: 0; transition: opacity 0.5s;">
         <button id="share-btn" class="ui-button" style="background-color: #a2f2a2;">Share</button>
+        <button id="cam-btn" class="ui-button" style="background-color: #ff99cc;">📷</button>
         <button id="mic-btn" class="ui-button" style="background-color: #cccccc;">MIC OFF</button>
         <button id="map-btn" class="ui-button" style="background-color: #a2c2f2;">🌐</button>
+        <input type="file" id="image-input" accept="image/*" capture="environment" style="display: none;">
     </div>
 
     <!-- Ad banner overlay -->

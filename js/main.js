@@ -132,8 +132,10 @@ let otherPlayers = new Map();
 let otherPlayerWorldPos = new Map();   // current rendered world pos (lerped)
 let otherPlayerTargetPos = new Map();  // latest server-reported world pos
 let chatBubbles = new Map();
+let imageBubbles = new Map();
 let nameLabels = new Map();
 let selfChatBubble = null;
+let selfImageBubble = null;
 let selfChatTimeout = null;
 let lastActivity = Date.now();
 let worldContainer;
@@ -141,7 +143,7 @@ let tileGrid = [];
 let lastTileGridX = null;
 let lastTileGridY = null;
 let lastMoveEmit = 0;
-let shareBtn, micBtn;
+let shareBtn, micBtn, camBtn, imageInput;
 let cursors, wasd;
 
 // WebRTC / voice chat
@@ -154,6 +156,7 @@ const MOVEMENT_SPEED = 4;
 const LERP_FACTOR = 0.2;
 const PLAYER_RADIUS = 25;
 const CHAT_BUBBLE_OFFSET = 60;
+const IMAGE_BUBBLE_OFFSET = 140;
 const IDLE_FADE_START = 30000;
 const IDLE_FADE_COMPLETE = 600000;
 const CHAT_DURATION = 5000;
@@ -216,11 +219,45 @@ function createChatBubble(scene, text, x, y, startTime = Date.now()) {
     return container;
 }
 
+function createImageBubble(scene, imageData, x, y, startTime = Date.now()) {
+    const key = `img-${Math.random()}`;
+    
+    const container = scene.add.container(x, y - IMAGE_BUBBLE_OFFSET);
+    container.setDepth(4);
+    container.startTime = startTime;
+
+    scene.textures.addBase64(key, imageData);
+    
+    const img = scene.add.image(0, 0, key);
+    
+    // Scale image to fit a max size
+    const maxSize = 150;
+    const scale = Math.min(maxSize / img.width, maxSize / img.height);
+    img.setScale(scale);
+
+    const bg = scene.add.graphics();
+    const width = img.displayWidth + 10;
+    const height = img.displayHeight + 10;
+    
+    bg.fillStyle(0xffffff, 1);
+    bg.lineStyle(3, 0x000000);
+    bg.fillRoundedRect(-width / 2, -height / 2, width, height, 8);
+    bg.strokeRoundedRect(-width / 2, -height / 2, width, height, 8);
+
+    container.add([bg, img]);
+    return container;
+}
+
 function updateSelfChat(scene, message) {
     if (selfChatBubble) selfChatBubble.destroy();
     if (selfChatTimeout) clearTimeout(selfChatTimeout);
     selfChatBubble = createChatBubble(scene, message, config.width / 2, config.height / 2);
     // Removed setTimeout to prevent 'snagging' conflict with the update() loop
+}
+
+function updateSelfImage(scene, imageData) {
+    if (selfImageBubble) selfImageBubble.destroy();
+    selfImageBubble = createImageBubble(scene, imageData, config.width / 2, config.height / 2);
 }
 
 function rotateAds() {
@@ -452,6 +489,28 @@ function create() {
     const shareBtn = document.getElementById('share-btn');
     const micBtn = document.getElementById('mic-btn');
     const mapBtn = document.getElementById('map-btn');
+    const camBtn = document.getElementById('cam-btn');
+    const imageInput = document.getElementById('image-input');
+
+    camBtn.addEventListener('click', () => {
+        imageInput.click();
+    });
+
+    imageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const imageData = event.target.result;
+                socket.emit('image-message', { imageData });
+                updateSelfImage(this, imageData);
+                lastActivity = Date.now();
+            };
+            reader.readAsDataURL(file);
+        }
+        // Reset input so the same file can be uploaded again
+        imageInput.value = '';
+    });
 
     // Share button logic
     shareBtn.addEventListener('click', () => {
@@ -710,9 +769,28 @@ function create() {
         }
     });
 
+    socket.on('image-received', ({ id, imageData, timestamp }) => {
+        if (otherPlayers.has(id)) {
+            const otherPlayer = otherPlayers.get(id);
+            if (imageBubbles.has(id)) imageBubbles.get(id).bubble.destroy();
+            imageBubbles.set(id, {
+                bubble: createImageBubble(this, imageData, otherPlayer.x, otherPlayer.y, timestamp),
+                timestamp
+            });
+        }
+    });
+
     socket.on('chat-sent', ({ nearbyPlayers }) => {
         const notification = this.add.text(this.scale.width / 2, this.scale.height - 80,
             `Message sent to ${nearbyPlayers} nearby players`,
+            { font: '12px Arial', fill: '#ffffff' }
+        ).setOrigin(0.5).setDepth(2);
+        setTimeout(() => notification.destroy(), 2000);
+    });
+
+    socket.on('image-sent', ({ nearbyPlayers }) => {
+        const notification = this.add.text(this.scale.width / 2, this.scale.height - 110,
+            `Photo shared with ${nearbyPlayers} nearby players`,
             { font: '12px Arial', fill: '#ffffff' }
         ).setOrigin(0.5).setDepth(2);
         setTimeout(() => notification.destroy(), 2000);
@@ -726,6 +804,7 @@ function create() {
             otherPlayerTargetPos.delete(id);
             if (nameLabels.has(id)) { nameLabels.get(id).destroy(); nameLabels.delete(id); }
             if (chatBubbles.has(id)) { chatBubbles.get(id).bubble.destroy(); chatBubbles.delete(id); }
+            if (imageBubbles.has(id)) { imageBubbles.get(id).bubble.destroy(); imageBubbles.delete(id); }
             closePeerConnection(id);
         }
     });
@@ -855,6 +934,11 @@ function update(time, delta) {
             selfChatBubble.y = this.scale.height / 2 - CHAT_BUBBLE_OFFSET;
         }
 
+        if (selfImageBubble) {
+            selfImageBubble.x = this.scale.width / 2;
+            selfImageBubble.y = this.scale.height / 2 - IMAGE_BUBBLE_OFFSET;
+        }
+
         const now = Date.now();
         if (now - lastMoveEmit > MOVE_EMIT_INTERVAL) {
             socket.emit('player-move', { x: currentPosition.x, y: currentPosition.y });
@@ -890,6 +974,10 @@ function update(time, delta) {
                 chatBubbles.get(id).bubble.x = otherPlayer.x;
                 chatBubbles.get(id).bubble.y = otherPlayer.y - CHAT_BUBBLE_OFFSET;
             }
+            if (imageBubbles.has(id)) {
+                imageBubbles.get(id).bubble.x = otherPlayer.x;
+                imageBubbles.get(id).bubble.y = otherPlayer.y - IMAGE_BUBBLE_OFFSET;
+            }
         }
     });
 
@@ -924,6 +1012,17 @@ function update(time, delta) {
         }
     });
 
+    // Fade and expire image bubbles
+    imageBubbles.forEach(({ bubble, timestamp }, id) => {
+        const age = Date.now() - timestamp;
+        if (age > CHAT_DURATION) {
+            bubble.destroy();
+            imageBubbles.delete(id);
+        } else {
+            bubble.setAlpha(1 - age / CHAT_DURATION);
+        }
+    });
+
     if (selfChatBubble) {
         const age = Date.now() - selfChatBubble.startTime;
         if (age > CHAT_DURATION) {
@@ -931,6 +1030,16 @@ function update(time, delta) {
             selfChatBubble = null;
         } else {
             selfChatBubble.setAlpha(1 - age / CHAT_DURATION);
+        }
+    }
+
+    if (selfImageBubble) {
+        const age = Date.now() - selfImageBubble.startTime;
+        if (age > CHAT_DURATION) {
+            selfImageBubble.destroy();
+            selfImageBubble = null;
+        } else {
+            selfImageBubble.setAlpha(1 - age / CHAT_DURATION);
         }
     }
 }
