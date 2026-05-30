@@ -55,7 +55,8 @@ const adContent = [
     { folder: 'assets/1', url: 'https://groupgpt.tech', slides: 4, slideDuration: 1500 },
     { folder: 'assets/2', url: 'https://usepinly.com', slides: 4, slideDuration: 1275 },
     { folder: 'assets/3', url: 'https://techieteam.club', slides: 4, slideDuration: 1500 },
-    { folder: 'assets/4', url: 'https://pxpony.com', slides: 3, slideDuration: 2000 }
+    { folder: 'assets/4', url: 'https://pxpony.com', slides: 3, slideDuration: 2000 },
+    { folder: 'assets/5', url: 'https://t.co/JEw9kNYaQy', slides: 1, slideDuration: 6000 }
 ];
 
 let adRotationTimer = null;
