@@ -1070,6 +1070,24 @@ function requestLocation() {
     if ("geolocation" in navigator) {
         if (watchId) navigator.geolocation.clearWatch(watchId);
         
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        };
+
+        // Get initial position quickly
+        navigator.geolocation.getCurrentPosition((position) => {
+            if (!worldViewMode) return;
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            console.log(`Initial GPS Fix: ${lat}, ${lng}`);
+            updatePositionFromGPS(lat, lng);
+        }, (error) => {
+            console.warn("Initial Geolocation error:", error.code, error.message);
+        }, options);
+
+        // Then start watching
         watchId = navigator.geolocation.watchPosition((position) => {
             if (!worldViewMode) {
                 navigator.geolocation.clearWatch(watchId);
@@ -1080,31 +1098,30 @@ function requestLocation() {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             console.log(`GPS Update: ${lat}, ${lng}`);
-            
-            const gameCoords = latLngToGame(lat, lng);
-            
-            currentPosition.x = gameCoords.x;
-            currentPosition.y = gameCoords.y;
-            
-            // Sync with server
-            socket.emit('player-move', { x: currentPosition.x, y: currentPosition.y });
-            
-            // Update URL
-            const newUrl = `${window.location.pathname}?x=${Math.round(currentPosition.x)}&y=${Math.round(currentPosition.y)}`;
-            window.history.replaceState({ x: currentPosition.x, y: currentPosition.y }, '', newUrl);
-            
-            if (leafletMap) {
-                leafletMap.setView([lat, lng]);
-            }
+            updatePositionFromGPS(lat, lng);
         }, (error) => {
-            console.warn("Geolocation error:", error.code, error.message);
-        }, {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 0
-        });
+            console.warn("Watch Geolocation error:", error.code, error.message);
+        }, options);
     } else {
         console.warn("Geolocation not supported by browser.");
+    }
+}
+
+function updatePositionFromGPS(lat, lng) {
+    const gameCoords = latLngToGame(lat, lng);
+    
+    currentPosition.x = gameCoords.x;
+    currentPosition.y = gameCoords.y;
+    
+    // Sync with server
+    socket.emit('player-move', { x: currentPosition.x, y: currentPosition.y });
+    
+    // Update URL
+    const newUrl = `${window.location.pathname}?x=${Math.round(currentPosition.x)}&y=${Math.round(currentPosition.y)}`;
+    window.history.replaceState({ x: currentPosition.x, y: currentPosition.y }, '', newUrl);
+    
+    if (leafletMap) {
+        leafletMap.setView([lat, lng]);
     }
 }
 
